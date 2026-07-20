@@ -34,4 +34,20 @@ class PrefixeModel extends Model
 
         return false;
     }
+
+    /**
+     * Vérifie un numéro malgache complet : préfixe valide + exactement
+     * 7 chiffres après le préfixe (10 chiffres au total).
+     * Les espaces sont ignorés (ex: 033 00 000 00).
+     */
+    public function valideNumeroComplet(string $telephone): bool
+    {
+        if (!$this->validePrefixe($telephone)) {
+            return false;
+        }
+
+        $chiffres = preg_replace('/\D/', '', $telephone);
+
+        return strlen($chiffres) === 10;
+    }
 }

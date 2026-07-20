@@ -45,8 +45,8 @@ class Client extends BaseController
             return redirect()->back()->withInput()->with('error', 'Veuillez saisir votre numéro de téléphone.');
         }
 
-        if (!$this->prefixeModel->validePrefixe($telephone)) {
-            return redirect()->back()->withInput()->with('error', 'Numéro non reconnu. Utilisez un préfixe valide de l\'opérateur (ex: 033, 037).');
+        if (!$this->prefixeModel->valideNumeroComplet($telephone)) {
+            return redirect()->back()->withInput()->with('error', 'Numéro invalide. Format attendu : préfixe (ex: 033, 037) suivi de 7 chiffres (ex: 033 00 000 00, soit 10 chiffres au total).');
         }
 
         $telephone = preg_replace('/\s+/', '', $telephone);
