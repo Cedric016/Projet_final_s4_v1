@@ -132,7 +132,7 @@ class Operations extends BaseController
         }
 
         return redirect()->to(site_url('operations/historique'))
-            ->with('success', "Opération ({$type['libelle']}) effectuée. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar, Gain opérateur: ' . number_format($gain, 0, ',', ' ') . ' Ar.');
+            ->with('success', "Opération ({$type['libelle']}) effectuée. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar, Commission 1%: ' . number_format($commission, 0, ',', ' ') . ' Ar, Gain opérateur: ' . number_format($gain, 0, ',', ' ') . ' Ar.');
     }
 
     public function historique()
