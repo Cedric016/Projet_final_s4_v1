@@ -89,12 +89,24 @@ class Operations extends BaseController
             if ($destId === $clientId) {
                 return redirect()->back()->with('error', 'Le destinataire doit être différent de l\'expéditeur.');
             }
-            if ($client['solde'] < $montant + $frais) {
-                return redirect()->back()->with('error', 'Solde insuffisant pour le transfert (montant + frais).');
+
+            // Transfert vers un autre opérateur ? (préfixe du destinataire marqué autre_operateur)
+            $commissionAutre = 0.0;
+            $prefixeDestId   = null;
+            $prefixeDest     = $this->prefixeModel->prefixePourNumero($dest['telephone']);
+            if ($prefixeDest && (int) $prefixeDest['autre_operateur'] === 1) {
+                $prefixeDestId   = $prefixeDest['id'];
+                $taux            = (float) (new \App\Models\ConfigOperateurModel())->commissionAutreOperateur();
+                $commissionAutre = round($montant * $taux / 100, 2);
             }
-            $this->clientModel->update($clientId, ['solde' => $client['solde'] - $montant - $frais]);
+
+            $fraisTotal = $frais + $commissionAutre;
+            if ($client['solde'] < $montant + $fraisTotal) {
+                return redirect()->back()->with('error', 'Solde insuffisant pour le transfert (montant + frais + commission autre opérateur).');
+            }
+            $this->clientModel->update($clientId, ['solde' => $client['solde'] - $montant - $fraisTotal]);
             $this->clientModel->update($destId, ['solde' => $dest['solde'] + $montant]);
-            $gain = $frais;
+            $gain = $frais + $commissionAutre;
         }
 
         $inserted = $this->transModel->insert([
@@ -102,8 +114,10 @@ class Operations extends BaseController
             'type_operation_id' => $typeId,
             'client_id'         => $clientId,
             'client_dest_id'    => $destId,
+            'prefixe_dest_id'   => $prefixeDestId ?? null,
             'montant'           => $montant,
             'frais'             => $frais,
+            'commission_autre'  => $commissionAutre ?? 0.0,
             'gain_operateur'    => $gain,
             'statut'            => $statut,
         ]);

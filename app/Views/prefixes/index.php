@@ -7,12 +7,13 @@
 </div>
 
 <table>
-    <thead><tr><th>Préfixe</th><th>Description</th><th>Statut</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Préfixe</th><th>Description</th><th>Opérateur</th><th>Statut</th><th>Actions</th></tr></thead>
     <tbody>
         <?php foreach ($prefixes as $p): ?>
             <tr>
                 <td><strong><?= esc($p['prefixe']) ?></strong></td>
                 <td><?= esc($p['description'] ?? '') ?></td>
+                <td><?= (int)($p['autre_operateur'] ?? 0) === 1 ? '<span class="badge badge-no">Autre opérateur</span>' : '<span class="badge badge-ok">Notre opérateur</span>' ?></td>
                 <td><?= $p['actif'] ? '<span class="badge badge-ok">Actif</span>' : '<span class="badge badge-no">Inactif</span>' ?></td>
                 <td class="actions">
                     <a href="<?= site_url('prefixes/edit/' . $p['id']) ?>" class="btn btn-warning btn-small">Modifier</a>
@@ -20,7 +21,7 @@
                 </td>
             </tr>
         <?php endforeach; ?>
-        <?php if (empty($prefixes)): ?><tr><td colspan="4">Aucun préfixe configuré.</td></tr><?php endif; ?>
+        <?php if (empty($prefixes)): ?><tr><td colspan="5">Aucun préfixe configuré.</td></tr><?php endif; ?>
     </tbody>
 </table>
 <?= $this->endSection() ?>

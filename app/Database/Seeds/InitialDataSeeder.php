@@ -61,5 +61,36 @@ class InitialDataSeeder extends Seeder
 
             $this->db->table('baremes')->insertBatch($rows);
         }
+
+        // Préfixes des AUTRES opérateurs (032, 031, 034) — toujours ajoutés si absents
+        $autres = [
+            ['prefixe' => '032', 'description' => 'Autre operateur 032'],
+            ['prefixe' => '031', 'description' => 'Autre operateur 031'],
+            ['prefixe' => '034', 'description' => 'Autre operateur 034'],
+        ];
+        $now = date('Y-m-d H:i:s');
+        foreach ($autres as $a) {
+            if (!$this->db->table('prefixes')->where('prefixe', $a['prefixe'])->countAllResults()) {
+                $this->db->table('prefixes')->insert([
+                    'prefixe'         => $a['prefixe'],
+                    'description'     => $a['description'],
+                    'actif'           => 1,
+                    'autre_operateur' => 1,
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ]);
+            }
+        }
+
+        // Paramètre : commission supplémentaire (% ) pour transfert vers un autre opérateur
+        if (!$this->db->table('config_operateur')->where('cle', 'commission_autre_operateur')->countAllResults()) {
+            $this->db->table('config_operateur')->insert([
+                'cle'         => 'commission_autre_operateur',
+                'valeur'      => '10',
+                'libelle'     => 'Commission supplémentaire (%) pour transfert vers un autre opérateur',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
     }
 }

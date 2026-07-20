@@ -11,7 +11,7 @@ class TransactionModel extends Model
     protected $useTimestamps    = true;
     protected $allowedFields    = [
         'reference', 'type_operation_id', 'client_id', 'client_dest_id',
-        'montant', 'frais', 'gain_operateur', 'statut',
+        'prefixe_dest_id', 'montant', 'frais', 'commission_autre', 'gain_operateur', 'statut',
     ];
     protected $useSoftDeletes   = false;
 

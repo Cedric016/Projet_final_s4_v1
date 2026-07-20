@@ -13,6 +13,9 @@
         <input type="text" name="description" value="<?= esc($prefixe['description'] ?? '') ?>" placeholder="ex: Telma, Orange...">
     </div>
     <div class="form-group">
+        <label><input type="checkbox" name="autre_operateur" value="1" <?= (!isset($prefixe) || (int)($prefixe['autre_operateur'] ?? 0) === 1) ? 'checked' : '' ?>> Appartient à un autre opérateur (032, 031, …)</label>
+    </div>
+    <div class="form-group">
         <label><input type="checkbox" name="actif" value="1" <?= (!isset($prefixe) || $prefixe['actif']) ? 'checked' : '' ?>> Actif</label>
     </div>
     <button type="submit" class="btn">Enregistrer</button>

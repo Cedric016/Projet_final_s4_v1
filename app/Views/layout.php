@@ -53,6 +53,9 @@
         <a href="<?= site_url('baremes') ?>" class="<?= ($active ?? '') === 'baremes' ? 'active' : '' ?>">Barèmes de frais</a>
         <a href="<?= site_url('clients') ?>" class="<?= ($active ?? '') === 'clients' ? 'active' : '' ?>">Comptes clients</a>
         <a href="<?= site_url('operations') ?>" class="<?= ($active ?? '') === 'operations' ? 'active' : '' ?>">Opérations</a>
+        <a href="<?= site_url('situation/gains') ?>" class="<?= ($active ?? '') === 'situation_gains' ? 'active' : '' ?>">Gains par opérateur</a>
+        <a href="<?= site_url('situation/operateurs') ?>" class="<?= ($active ?? '') === 'situation_operateurs' ? 'active' : '' ?>">Montants à envoyer</a>
+        <a href="<?= site_url('settings') ?>" class="<?= ($active ?? '') === 'settings' ? 'active' : '' ?>">Paramètres</a>
         <a href="<?= site_url('client/login') ?>" class="btn-client">Espace Client</a>
     </nav>
     <main>

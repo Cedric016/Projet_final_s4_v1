@@ -9,14 +9,15 @@ class PrefixeModel extends Model
     protected $table            = 'prefixes';
     protected $primaryKey       = 'id';
     protected $useTimestamps    = true;
-    protected $allowedFields    = ['prefixe', 'description', 'actif'];
+    protected $allowedFields    = ['prefixe', 'description', 'actif', 'autre_operateur'];
     protected $useSoftDeletes   = false;
 
     protected $validationRules = [
-        'id'         => 'permit_empty|integer',
-        'prefixe'    => 'required|max_length[10]|is_unique[prefixes.prefixe,id,{id}]',
-        'description' => 'permit_empty|max_length[100]',
-        'actif'      => 'permit_empty|in_list[0,1]',
+        'id'               => 'permit_empty|integer',
+        'prefixe'          => 'required|max_length[10]|is_unique[prefixes.prefixe,id,{id}]',
+        'description'      => 'permit_empty|max_length[100]',
+        'actif'            => 'permit_empty|in_list[0,1]',
+        'autre_operateur'  => 'permit_empty|in_list[0,1]',
     ];
 
     public function validePrefixe(string $telephone): bool
@@ -34,6 +35,40 @@ class PrefixeModel extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Retourne le préfixe actif correspondant au numéro, avec son flag autre_operateur.
+     */
+    public function prefixePourNumero(string $telephone): ?array
+    {
+        if (empty($telephone)) {
+            return null;
+        }
+
+        $prefixes = $this->where('actif', 1)->orderBy('LENGTH(prefixe)', 'DESC')->findAll();
+
+        foreach ($prefixes as $p) {
+            if (str_starts_with($telephone, $p['prefixe'])) {
+                return $p;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * True si le numéro appartient à un AUTRE opérateur (préfixe marqué autre_operateur).
+     */
+    public function estAutreOperateur(string $telephone): bool
+    {
+        $p = $this->prefixePourNumero($telephone);
+        return $p !== null && (int) $p['autre_operateur'] === 1;
+    }
+
+    public function prefixesAutresOperateurs(): array
+    {
+        return $this->where('actif', 1)->where('autre_operateur', 1)->orderBy('prefixe', 'ASC')->findAll();
     }
 
     /**

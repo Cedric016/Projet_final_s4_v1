@@ -41,6 +41,12 @@ $routes->get('operations', 'Operations::index');
 $routes->post('operations/executer', 'Operations::executer');
 $routes->get('operations/historique', 'Operations::historique');
 
+$routes->get('settings', 'Settings::index');
+$routes->post('settings/update', 'Settings::update');
+
+$routes->get('situation/gains', 'Situation::gains');
+$routes->get('situation/operateurs', 'Situation::operateurs');
+
 // Espace client (4209)
 $routes->get('client/login', 'Client::login');
 $routes->post('client/authentifier', 'Client::authentifier');

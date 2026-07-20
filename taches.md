@@ -128,6 +128,35 @@ Contrôleur `app/Controllers/Client.php` et vues dans `app/Views/client/` :
 
 ---
 
-# Partie 4209 (à venir) — Améliorations et finitions
+# Partie 4209 (Côté opérateur, fait) — Améliorations et finitions
+
+## 1. Configuration des préfixes des autres opérateurs
+- Migration `2024_01_02_000001_AddAutresOperateurs` : ajout de la colonne `prefixe.autre_operateur` (TINYINT, 0 = notre opérateur, 1 = autre opérateur).
+- Le seeder `InitialDataSeeder` insère maintenant les préfixes tiers (032, 031, 034 en `autre_operateur = 1`) en plus de 033/037.
+- `PrefixeModel` : `prefixePourNumero()`, `estAutreOperateur()`, `prefixesAutresOperateurs()`.
+- Vue `prefixes/index` et `prefixes/form` : badge « Notre opérateur / Autre opérateur » + case à cocher.
+
+## 2. Configuration du % de commission pour transfert vers un autre opérateur
+- Nouvelle table `config_operateur` (clé/valeur) + `ConfigOperateurModel` (méthode `commissionAutreOperateur()`).
+- Seeder : paramètre `commission_autre_operateur = 10` (% ).
+- Contrôleur `Settings` + vue `settings/index` : page pour modifier le % (route `settings`, `settings/update`).
+
+## 3. Application de la commission + séparation des gains
+- `Operations::executer` et `Client::executer` : lors d'un transfert dont le destinataire est sur un préfixe `autre_operateur`,
+  - calculent `commission_autre = montant * taux / 100`,
+  - débitent `montant + frais + commission_autre`,
+  - enregistrent `prefixe_dest_id` et `commission_autre` sur la transaction.
+- Migration : colonnes `transactions.prefixe_dest_id` et `transactions.commission_autre`.
+- Page `situation/gains` (`Situation::gains`) : sépare les gains « notre opérateur » vs « autres opérateurs » (commission supp. + gain).
+
+## 4. Situation des montants à envoyer à chaque opérateur
+- Page `situation/operateurs` (`Situation::operateurs`) : par préfixe tiers, nombre de transferts, montant total à envoyer (hors frais/commission), commission perçue.
+- Liens ajoutés dans le menu (layout) : « Gains par opérateur », « Montants à envoyer », « Paramètres ».
+
+## Tests effectués
+- `php spark migrate` + `php spark db:seed InitialDataSeeder` : préfixes tiers et config insérés.
+- Transfert de 50 000 Ar vers un client 032 → frais 400 + commission 5 000 (10 %) = gain 5 400 ; `prefixe_dest_id` renseigné.
+- Pages `/situation/gains`, `/situation/operateurs`, `/settings` : rendues et correctes (séparation opérateur / autres opérateurs).
+- MAJ du % via `/settings/update` : persisté en base.
 
 
