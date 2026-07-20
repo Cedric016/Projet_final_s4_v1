@@ -12,6 +12,8 @@
         nav { background: #0b5ed7; padding: 0 25px; display: flex; flex-wrap: wrap; gap: 5px; }
         nav a { color: #fff; text-decoration: none; padding: 12px 16px; display: block; }
         nav a:hover, nav a.active { background: rgba(255,255,255,.15); }
+        nav a.btn-client { background: #198754; font-weight: 600; }
+        nav a.btn-client:hover { background: #157347; }
         main { padding: 25px; max-width: 1200px; margin: 0 auto; }
         .card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.1); margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -51,6 +53,7 @@
         <a href="<?= site_url('baremes') ?>" class="<?= ($active ?? '') === 'baremes' ? 'active' : '' ?>">Barèmes de frais</a>
         <a href="<?= site_url('clients') ?>" class="<?= ($active ?? '') === 'clients' ? 'active' : '' ?>">Comptes clients</a>
         <a href="<?= site_url('operations') ?>" class="<?= ($active ?? '') === 'operations' ? 'active' : '' ?>">Opérations</a>
+        <a href="<?= site_url('client/login') ?>" class="btn-client">Espace Client</a>
     </nav>
     <main>
         <?php if (session()->getFlashdata('success')): ?>
