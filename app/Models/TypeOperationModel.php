@@ -13,6 +13,7 @@ class TypeOperationModel extends Model
     protected $useSoftDeletes   = false;
 
     protected $validationRules = [
+        'id'          => 'permit_empty|integer',
         'code'        => 'required|max_length[30]|is_unique[types_operation.code,id,{id}]',
         'libelle'     => 'required|max_length[100]',
         'frais_actif' => 'permit_empty|in_list[0,1]',

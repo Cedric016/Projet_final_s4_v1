@@ -13,6 +13,7 @@ class PrefixeModel extends Model
     protected $useSoftDeletes   = false;
 
     protected $validationRules = [
+        'id'         => 'permit_empty|integer',
         'prefixe'    => 'required|max_length[10]|is_unique[prefixes.prefixe,id,{id}]',
         'description' => 'permit_empty|max_length[100]',
         'actif'      => 'permit_empty|in_list[0,1]',

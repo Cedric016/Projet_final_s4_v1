@@ -13,6 +13,7 @@ class ClientModel extends Model
     protected $useSoftDeletes   = false;
 
     protected $validationRules = [
+        'id'        => 'permit_empty|integer',
         'nom'       => 'required|max_length[100]',
         'telephone' => 'required|max_length[20]|is_unique[clients.telephone,id,{id}]',
         'solde'     => 'permit_empty|numeric',
