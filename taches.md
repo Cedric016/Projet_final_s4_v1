@@ -93,6 +93,26 @@ Puis ouvrir `http://localhost:8080` dans le navigateur.
 
 ---
 
+---
+
+# Partie 4208 (Côté client) — Améliorations à venir
+
+## 1. Option « inclure les frais de retrait lors de l'envoi »
+- Dans l'espace client (`/client/operations`), ajouter une case à cocher « Inclure les frais de retrait » lors d'un retrait.
+- Si l'option est cochée, le montant saisi est le montant **net reçu** par le client : on débite `montant + frais` (comme aujourd'hui), mais on affiche/confirme que les frais sont inclus dans le montant demandé.
+- Si l'option est décochée, comportement actuel : le client reçoit `montant - frais`.
+- `Client::executer` doit lire cette option et ajuster l'affichage et le libellé de la transaction (pas de changement sur le débit total, qui reste montant + frais).
+
+## 2. Envoi multiple vers plusieurs numéros (montant divisé)
+- Permettre au client d'envoyer (transfert) vers **plusieurs numéros** en une seule opération.
+- Saisie d'une liste de numéros (séparés par virgule, espace ou saut de ligne) et d'un **montant total**.
+- Le montant total est **divisé équitablement** pour chaque numéro (`montant_par_numero = montant_total / nombre_de_numéros`).
+- Pour chaque numéro : vérifier le préfixe valide, créer le destinataire si besoin, calculer les frais + commission (autre opérateur si applicable), débiter l'émetteur et créditer chaque destinataire.
+- Enregistrer une transaction par numéro (ou une transaction groupée avec détail), en respectant le solde disponible de l'émetteur (refus si solde insuffisant pour le total).
+- Refuser les doublons et le numéro de l'émetteur dans la liste.
+
+---
+
 # Partie 4209 (Espace client, fait) — Côté client
 
 But : permettre à un client de se connecter et d'effectuer ses opérations, sans inscription préalable.
