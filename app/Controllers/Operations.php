@@ -64,8 +64,11 @@ class Operations extends BaseController
         }
 
         $frais  = $this->baremeModel->calculerFrais($typeId, $montant);
+        $commission = round($montant * 1 / 100, 2);
 
-        $gain   = 0.0;
+        $gain             = 0.0;
+        $operateurEnvId   = null;
+        $operateurRecId   = null;
         $statut = 'succes';
 
         if ($type['code'] === 'depot') {
@@ -90,36 +93,38 @@ class Operations extends BaseController
                 return redirect()->back()->with('error', 'Le destinataire doit être différent de l\'expéditeur.');
             }
 
-            // Transfert vers un autre opérateur ? (préfixe du destinataire marqué autre_operateur)
-            $commissionAutre = 0.0;
-            $prefixeDestId   = null;
-            $prefixeDest     = $this->prefixeModel->prefixePourNumero($dest['telephone']);
-            if ($prefixeDest && (int) $prefixeDest['autre_operateur'] === 1) {
-                $prefixeDestId   = $prefixeDest['id'];
-                $taux            = (float) (new \App\Models\ConfigOperateurModel())->commissionAutreOperateur();
-                $commissionAutre = round($montant * $taux / 100, 2);
+            $prefixeEnv = $this->prefixeModel->prefixePourNumero($client['telephone']);
+            $prefixeRec = $this->prefixeModel->prefixePourNumero($dest['telephone']);
+
+            if ($prefixeEnv) {
+                $operateurEnvId = $prefixeEnv['id'];
+            }
+            if ($prefixeRec) {
+                $operateurRecId = $prefixeRec['id'];
             }
 
-            $fraisTotal = $frais + $commissionAutre;
-            if ($client['solde'] < $montant + $fraisTotal) {
-                return redirect()->back()->with('error', 'Solde insuffisant pour le transfert (montant + frais + commission autre opérateur).');
+            $totalDebit = $montant + $frais + $commission;
+            if ($client['solde'] < $totalDebit) {
+                return redirect()->back()->with('error', 'Solde insuffisant pour le transfert (montant + frais + commission).');
             }
-            $this->clientModel->update($clientId, ['solde' => $client['solde'] - $montant - $fraisTotal]);
+            $this->clientModel->update($clientId, ['solde' => $client['solde'] - $totalDebit]);
             $this->clientModel->update($destId, ['solde' => $dest['solde'] + $montant]);
-            $gain = $frais + $commissionAutre;
+            $gain = $frais + $commission;
         }
 
         $inserted = $this->transModel->insert([
-            'reference'         => $this->transModel->genererReference(),
-            'type_operation_id' => $typeId,
-            'client_id'         => $clientId,
-            'client_dest_id'    => $destId,
-            'prefixe_dest_id'   => $prefixeDestId ?? null,
-            'montant'           => $montant,
-            'frais'             => $frais,
-            'commission_autre'  => $commissionAutre ?? 0.0,
-            'gain_operateur'    => $gain,
-            'statut'            => $statut,
+            'reference'             => $this->transModel->genererReference(),
+            'type_operation_id'     => $typeId,
+            'client_id'             => $clientId,
+            'client_dest_id'        => $destId,
+            'prefixe_dest_id'       => $operateurRecId ?? null,
+            'operateur_envoyeur_id' => $operateurEnvId ?? null,
+            'operateur_recepteur_id'=> $operateurRecId ?? null,
+            'montant'               => $montant,
+            'frais'                 => $frais,
+            'commission_autre'      => $commission,
+            'gain_operateur'        => $gain,
+            'statut'                => $statut,
         ]);
 
         if (!$inserted) {

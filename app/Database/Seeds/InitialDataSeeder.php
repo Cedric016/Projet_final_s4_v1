@@ -16,6 +16,7 @@ class InitialDataSeeder extends Seeder
             $this->db->table('prefixes')->insertBatch([
                 ['prefixe' => '033', 'description' => 'Préfixe operateur 033', 'actif' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
                 ['prefixe' => '037', 'description' => 'Préfixe operateur 037', 'actif' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
+                ['prefixe' => '038', 'description' => 'Préfixe operateur 038 (Telma)', 'actif' => 1, 'created_at' => date('Y-m-d H:i:s'), 'updated_at' => date('Y-m-d H:i:s')],
             ]);
 
             // Types d'opération
@@ -62,13 +63,25 @@ class InitialDataSeeder extends Seeder
             $this->db->table('baremes')->insertBatch($rows);
         }
 
+        $now = date('Y-m-d H:i:s');
+
+        // Préfixe opérateur 038 (Telma) — toujours ajouté si absent
+        if (!$this->db->table('prefixes')->where('prefixe', '038')->countAllResults()) {
+            $this->db->table('prefixes')->insert([
+                'prefixe'     => '038',
+                'description' => 'Préfixe operateur 038 (Telma)',
+                'actif'       => 1,
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ]);
+        }
+
         // Préfixes des AUTRES opérateurs (032, 031, 034) — toujours ajoutés si absents
         $autres = [
             ['prefixe' => '032', 'description' => 'Autre operateur 032'],
             ['prefixe' => '031', 'description' => 'Autre operateur 031'],
             ['prefixe' => '034', 'description' => 'Autre operateur 034'],
         ];
-        $now = date('Y-m-d H:i:s');
         foreach ($autres as $a) {
             if (!$this->db->table('prefixes')->where('prefixe', $a['prefixe'])->countAllResults()) {
                 $this->db->table('prefixes')->insert([

@@ -157,8 +157,11 @@ class Client extends BaseController
         }
 
         $frais = $this->baremeModel->calculerFrais($typeId, $montant);
+        $commission = round($montant * 1 / 100, 2);
 
-        $gain   = 0.0;
+        $gain             = 0.0;
+        $operateurEnvId   = null;
+        $operateurRecId   = null;
         $libelle = $type['libelle'];
         $messageSucces = '';
 
@@ -181,16 +184,18 @@ class Client extends BaseController
         }
 
         $inserted = $this->transModel->insert([
-            'reference'         => $this->transModel->genererReference(),
-            'type_operation_id' => $typeId,
-            'client_id'         => $client['id'],
-            'client_dest_id'    => $destId,
-            'prefixe_dest_id'   => $prefixeDestId ?? null,
-            'montant'           => $montant,
-            'frais'             => $frais,
-            'commission_autre'  => $commissionAutre ?? 0.0,
-            'gain_operateur'    => $gain,
-            'statut'            => 'succes',
+            'reference'             => $this->transModel->genererReference(),
+            'type_operation_id'     => $typeId,
+            'client_id'             => $client['id'],
+            'client_dest_id'        => $destId,
+            'prefixe_dest_id'       => $operateurRecId ?? null,
+            'operateur_envoyeur_id' => $operateurEnvId ?? null,
+            'operateur_recepteur_id'=> $operateurRecId ?? null,
+            'montant'               => $montant,
+            'frais'                 => $frais,
+            'commission_autre'      => $commission,
+            'gain_operateur'        => $gain,
+            'statut'                => 'succes',
         ]);
 
         if (!$inserted) {
@@ -248,18 +253,12 @@ class Client extends BaseController
             $montants[$num] = $base + ($i === 0 ? $reliquat : 0.0);
         }
 
-        $configModel = new \App\Models\ConfigOperateurModel();
         $totalDebit = 0.0;
         foreach ($destinataires as $num) {
             $m       = $montants[$num];
             $frais   = $this->baremeModel->calculerFrais($type['id'], $m);
-            $prefixe = $this->prefixeModel->prefixePourNumero($num);
-            $comm    = 0.0;
-            if ($prefixe && (int) $prefixe['autre_operateur'] === 1) {
-                $taux = (float) $configModel->commissionAutreOperateur();
-                $comm = round($m * $taux / 100, 2);
-            }
-            $totalDebit += $m + $frais + $comm;
+            $commission = round($m * 1 / 100, 2);
+            $totalDebit += $m + $frais + $commission;
         }
 
         if ($client['solde'] < $totalDebit) {
@@ -278,30 +277,28 @@ class Client extends BaseController
             }
 
             $frais = $this->baremeModel->calculerFrais($type['id'], $m);
-            $commissionAutre = 0.0;
-            $prefixeDestId   = null;
-            $prefixe = $this->prefixeModel->prefixePourNumero($num);
-            if ($prefixe && (int) $prefixe['autre_operateur'] === 1) {
-                $prefixeDestId   = $prefixe['id'];
-                $taux            = (float) $configModel->commissionAutreOperateur();
-                $commissionAutre = round($m * $taux / 100, 2);
-            }
+            $commission = round($m * 1 / 100, 2);
+            $prefixeEnv = $this->prefixeModel->prefixePourNumero($client['telephone']);
+            $prefixeRec = $this->prefixeModel->prefixePourNumero($num);
+            $operateurEnvId   = $prefixeEnv['id'] ?? null;
+            $operateurRecId   = $prefixeRec['id'] ?? null;
 
-            $fraisTotal = $frais + $commissionAutre;
-            $this->clientModel->update($client['id'], ['solde' => $this->clientModel->find($client['id'])['solde'] - $m - $fraisTotal]);
+            $this->clientModel->update($client['id'], ['solde' => $this->clientModel->find($client['id'])['solde'] - $m - $frais - $commission]);
             $this->clientModel->update($dest['id'], ['solde' => $dest['solde'] + $m]);
 
             $this->transModel->insert([
-                'reference'         => $this->transModel->genererReference(),
-                'type_operation_id' => $type['id'],
-                'client_id'         => $client['id'],
-                'client_dest_id'    => $dest['id'],
-                'prefixe_dest_id'   => $prefixeDestId,
-                'montant'           => $m,
-                'frais'             => $frais,
-                'commission_autre'  => $commissionAutre,
-                'gain_operateur'    => $frais + $commissionAutre,
-                'statut'            => 'succes',
+                'reference'             => $this->transModel->genererReference(),
+                'type_operation_id'     => $type['id'],
+                'client_id'             => $client['id'],
+                'client_dest_id'        => $dest['id'],
+                'prefixe_dest_id'       => $operateurRecId,
+                'operateur_envoyeur_id' => $operateurEnvId,
+                'operateur_recepteur_id'=> $operateurRecId,
+                'montant'               => $m,
+                'frais'                 => $frais,
+                'commission_autre'      => $commission,
+                'gain_operateur'        => $frais + $commission,
+                'statut'                => 'succes',
             ]);
         }
 
