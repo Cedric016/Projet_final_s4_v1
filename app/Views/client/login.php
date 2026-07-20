@@ -11,5 +11,8 @@
         </div>
         <button type="submit" class="btn">Se connecter</button>
     </form>
+    <p style="margin-top:15px;">
+        <a href="<?= site_url('dashboard') ?>" class="btn btn-secondary btn-small">&larr; Retour à l'espace opérateur</a>
+    </p>
 </div>
 <?= $this->endSection() ?>
