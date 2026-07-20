@@ -160,16 +160,21 @@ class Client extends BaseController
 
         $gain   = 0.0;
         $libelle = $type['libelle'];
+        $messageSucces = '';
 
         if ($type['code'] === 'depot') {
             $this->clientModel->update($client['id'], ['solde' => $client['solde'] + $montant]);
 
         } elseif ($type['code'] === 'retrait') {
+            $fraisInclus = (bool) $this->request->getPost('frais_inclus');
             if ($client['solde'] < $montant + $frais) {
                 return redirect()->back()->with('error', 'Solde insuffisant pour le retrait (montant + frais).');
             }
             $this->clientModel->update($client['id'], ['solde' => $client['solde'] - $montant - $frais]);
             $gain = $frais;
+            $recu = $fraisInclus ? $montant : max(0, $montant - $frais);
+            $messageSucces = ($fraisInclus ? 'Retrait effectué (frais inclus). Net reçu : ' : 'Retrait effectué. Net reçu : ')
+                . number_format($recu, 0, ',', ' ') . ' Ar. Frais : ' . number_format($frais, 0, ',', ' ') . ' Ar.';
 
         } elseif ($type['code'] === 'transfert') {
             if (!$destId) {
@@ -219,7 +224,8 @@ class Client extends BaseController
             return redirect()->back()->with('error', 'Erreur lors de l\'enregistrement : ' . implode('<br>', $this->transModel->errors()));
         }
 
-        return redirect()->to(site_url('client'))->with('success', "{$libelle} effectué. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar.');
+        $msg = $messageSucces ?: "{$libelle} effectué. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar.';
+        return redirect()->to(site_url('client'))->with('success', $msg);
     }
 
     public function historique()

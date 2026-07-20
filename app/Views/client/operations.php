@@ -27,7 +27,13 @@
     </div>
     <div class="form-group">
         <label>Montant (Ar)</label>
-        <input type="number" name="montant" min="0" step="0.01" required>
+        <input type="number" name="montant" id="montant" min="0" step="0.01" required>
+    </div>
+    <div class="form-group" id="retrait_block" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" name="frais_inclus" id="frais_inclus" value="1" style="width:auto;">
+            Inclure les frais de retrait dans le montant (vous recevez le montant saisi)
+        </label>
     </div>
     <button type="submit" class="btn">Valider</button>
 </form>
@@ -36,6 +42,7 @@
 document.getElementById('type_op').addEventListener('change', function () {
     var code = this.options[this.selectedIndex].getAttribute('data-code');
     document.getElementById('dest_block').style.display = (code === 'transfert') ? 'block' : 'none';
+    document.getElementById('retrait_block').style.display = (code === 'retrait') ? 'block' : 'none';
 });
 </script>
 <?= $this->endSection() ?>
