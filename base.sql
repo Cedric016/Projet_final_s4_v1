@@ -1,14 +1,5 @@
--- =====================================================================
--- Simulateur Opérateur Mobile Money
--- Script de création de la base de données (SQLite)
--- Généré à partir des migrations CodeIgniter 4
--- =====================================================================
-
 PRAGMA foreign_keys = ON;
 
--- ---------------------------------------------------------------------
--- Préfixes valides de l'opérateur (ex: 033, 037)
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS prefixes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     prefixe     VARCHAR(10) NOT NULL UNIQUE,
@@ -18,10 +9,6 @@ CREATE TABLE IF NOT EXISTS prefixes (
     updated_at  DATETIME
 );
 
--- ---------------------------------------------------------------------
--- Types d'opération (dépôt, retrait, transfert)
--- frais_actif : 1 = applique des frais (barème), 0 = gratuit
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS types_operation (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     code        VARCHAR(30) NOT NULL UNIQUE,
@@ -31,10 +18,6 @@ CREATE TABLE IF NOT EXISTS types_operation (
     updated_at  DATETIME
 );
 
--- ---------------------------------------------------------------------
--- Barèmes de frais par tranche de montant (modifiables)
--- montant_max NULL = pas de plafond (dernière tranche)
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS baremes (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     type_operation_id   INTEGER UNSIGNED NOT NULL,
@@ -46,9 +29,6 @@ CREATE TABLE IF NOT EXISTS baremes (
     FOREIGN KEY (type_operation_id) REFERENCES types_operation(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- ---------------------------------------------------------------------
--- Comptes clients
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS clients (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     nom         VARCHAR(100) NOT NULL,
@@ -59,11 +39,6 @@ CREATE TABLE IF NOT EXISTS clients (
     updated_at  DATETIME
 );
 
--- ---------------------------------------------------------------------
--- Transactions (historique des opérations)
--- client_dest_id : destinataire pour un transfert
--- gain_operateur : frais perçus par l'opérateur (retrait / transfert)
--- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS transactions (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
     reference           VARCHAR(50) NOT NULL UNIQUE,
@@ -81,23 +56,15 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (client_dest_id)   REFERENCES clients(id)         ON DELETE SET NULL ON UPDATE CASCADE
 );
 
--- =====================================================================
--- Données initiales (seed)
--- =====================================================================
-
--- Préfixes valides de l'opérateur
 INSERT INTO prefixes (prefixe, description, actif, created_at, updated_at) VALUES
     ('033', 'Préfixe operateur 033', 1, datetime('now'), datetime('now')),
     ('037', 'Préfixe operateur 037', 1, datetime('now'), datetime('now'));
 
--- Types d'opération
 INSERT INTO types_operation (code, libelle, frais_actif, created_at, updated_at) VALUES
     ('depot',     'Dépôt',     0, datetime('now'), datetime('now')),
     ('retrait',   'Retrait',   1, datetime('now'), datetime('now')),
     ('transfert', 'Transfert', 1, datetime('now'), datetime('now'));
 
--- Barèmes de frais (exemple fourni) pour retrait et transfert
--- Tranches : montant_min, montant_max, frais
 INSERT INTO baremes (type_operation_id, montant_min, montant_max, frais, created_at, updated_at)
 SELECT t.id, b.montant_min, b.montant_max, b.frais, datetime('now'), datetime('now')
 FROM types_operation t
