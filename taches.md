@@ -1,6 +1,6 @@
 # Démarche de réalisation du projet
 
-Objectif : créer un système qui simule un opérateur de Mobile Money (côté opérateur).
+Objectif : créer un système qui simule un opérateur de Mobile Money.
 
 Le travail est réparti en deux parties :
 - **4208** : mise en place du système (faite).
@@ -8,7 +8,7 @@ Le travail est réparti en deux parties :
 
 ---
 
-# Partie 4208 (moi) — Mise en place du système
+# Partie 4208 — Mise en place du système + coté opérateur
 
 ## 1. Préparation de l'environnement
 - J'ai récupéré le projet CodeIgniter 4 déjà en place (dossier `app`, `public`, `system`, etc.).
@@ -68,12 +68,31 @@ Le système permet à l'opérateur de :
 
 ---
 
+# Installation — que faire après un `git pull`
+
+La base de données (fichier `writable/mobilemoney.db`) n'est **pas** incluse dans le dépôt (elle est ignorée par git). Elle doit être créée en local une seule fois.
+
+Après avoir récupéré le projet (`git pull`), exécuter dans le terminal, depuis la racine du projet :
+
+```
+php spark migrate
+php spark db:seed InitialDataSeeder
+```
+
+Cela va :
+1. créer le fichier `writable/mobilemoney.db` avec les 5 tables (prefixes, types_operation, baremes, clients, transactions),
+2. insérer les données de départ (préfixes 033/037, types dépôt/retrait/transfert, barèmes de frais).
+
+Pour lancer le site :
+```
+php spark serve
+```
+Puis ouvrir `http://localhost:8080` dans le navigateur.
+
+> Note : la base n'étant pas poussée, chaque personne repart avec une base vide (sans les clients/tests), mais avec la structure et les données de départ (seed). C'est normal.
+
+---
+
 # Partie 4209 (à venir) — Améliorations et finitions
 
-Travail prévu pour la suite :
-- Ajouter une authentification / espace sécurisé pour l'opérateur.
-- Ajouter des filtres et de la recherche dans l'historique des transactions.
-- Exporter les rapports de gain (CSV / PDF).
-- Ajouter des graphiques d'évolution des gains.
-- Gérer les annulations et remboursements de transactions.
-- Tests automatisés (PHPUnit).
+
