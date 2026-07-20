@@ -93,6 +93,41 @@ Puis ouvrir `http://localhost:8080` dans le navigateur.
 
 ---
 
+# Partie 4209 (Espace client, fait) — Côté client
+
+But : permettre à un client de se connecter et d'effectuer ses opérations, sans inscription préalable.
+
+## 1. Connexion automatique
+- Page de connexion `/client/login` : le client saisit simplement son numéro de téléphone.
+- `/client/authentifier` vérifie que le numéro commence par un **préfixe valide** de l'opérateur (033, 037 via `PrefixeModel::validePrefixe`).
+- Si le client n'existe pas encore, il est **créé automatiquement** (pas d'inscription).
+- La session mémorise le numéro (`client_telephone`) via un helper `client_auth` (`app/Helpers/client_auth_helper.php`).
+- `/client/deconnecter` déconnecte le client.
+
+## 2. Espace client
+Contrôleur `app/Controllers/Client.php` et vues dans `app/Views/client/` :
+- `/client` : tableau de bord avec le **solde** et les 5 dernières opérations.
+- `/client/operations` : effectuer une opération (dépôt, retrait, transfert).
+- `/client/executer` : traite l'opération et met à jour le solde + enregistre la transaction (frais/gain calculés via `BaremeModel`).
+- `/client/historique` : liste de **toutes les opérations** du client.
+
+## 3. Règles métier (côté client)
+- **Dépôt** : crédite le solde, sans frais (supposé automatique).
+- **Retrait** : débite solde + frais, refusé si solde insuffisant (supposé automatique).
+- **Transfert** : débite l'émetteur (montant + frais), crédite le destinataire, destinataire obligatoire et différent de soi.
+- Les frais et le gain opérateur proviennent des **barèmes** configurés par l'opérateur (partie 4208).
+
+## 4. Routes ajoutées (`app/Config/Routes.php`)
+`client/login`, `client/authentifier`, `client/deconnecter`, `client`, `client/operations`, `client/executer`, `client/historique`.
+
+## 5. Tests effectués
+- Connexion d'un nouveau numéro → création automatique du client + accès à l'espace.
+- Dépôt de 50 000 Ar → solde mis à jour.
+- Transfert de 10 000 Ar vers un autre client → émetteur 39 900 (frais 100), destinataire 10 000.
+- Historique correctement peuplé.
+
+---
+
 # Partie 4209 (à venir) — Améliorations et finitions
 
 

@@ -40,3 +40,12 @@ $routes->get('clients/delete/(:num)', 'Clients::delete/$1');
 $routes->get('operations', 'Operations::index');
 $routes->post('operations/executer', 'Operations::executer');
 $routes->get('operations/historique', 'Operations::historique');
+
+// Espace client (4209)
+$routes->get('client/login', 'Client::login');
+$routes->post('client/authentifier', 'Client::authentifier');
+$routes->get('client/deconnecter', 'Client::deconnecter');
+$routes->get('client', 'Client::index');
+$routes->get('client/operations', 'Client::operations');
+$routes->post('client/executer', 'Client::executer');
+$routes->get('client/historique', 'Client::historique');
