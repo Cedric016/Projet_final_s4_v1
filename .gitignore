@@ -1,5 +1,34 @@
+# Dépendances Composer
 /vendor/
+
+# Variables d'environnement
 .env
-/writable/
+
+# Fichiers générés par CodeIgniter
+/writable/cache/*
+/writable/logs/*
+/writable/session/*
+/writable/uploads/*
+/writable/debugbar/*
+
+# Conserver les fichiers index
+!/writable/cache/index.html
+!/writable/logs/index.html
+!/writable/session/index.html
+!/writable/uploads/index.html
+!/writable/debugbar/index.html
+
+# Fichiers temporaires
+*.log
+
+# IDE
 .vscode/
 .idea/
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Base de données SQLite (régénérée via migrations + seed)
+writable/*.db
+writable/*.db-*
