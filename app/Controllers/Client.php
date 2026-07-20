@@ -49,6 +49,8 @@ class Client extends BaseController
             return redirect()->back()->withInput()->with('error', 'Numéro non reconnu. Utilisez un préfixe valide de l\'opérateur (ex: 033, 037).');
         }
 
+        $telephone = preg_replace('/\s+/', '', $telephone);
+
         $client = $this->clientModel->findByTelephone($telephone);
 
         if (!$client) {
@@ -56,10 +58,14 @@ class Client extends BaseController
             $id = $this->clientModel->insert(['nom' => $nom, 'telephone' => $telephone, 'solde' => 0], true);
 
             if (!$id) {
-                return redirect()->back()->withInput()->with('error', implode('<br>', $this->clientModel->errors()));
-            }
+                $client = $this->clientModel->findByTelephone($telephone);
 
-            $client = $this->clientModel->find($id);
+                if (!$client) {
+                    return redirect()->back()->withInput()->with('error', implode('<br>', $this->clientModel->errors()));
+                }
+            } else {
+                $client = $this->clientModel->find($id);
+            }
         }
 
         service('session')->set('client_telephone', $client['telephone']);
