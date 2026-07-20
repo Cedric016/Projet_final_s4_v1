@@ -16,14 +16,16 @@
     </div>
     <div class="form-group" id="dest_block" style="display:none;">
         <label>Destinataire (pour transfert)</label>
+        <p style="margin:0 0 6px;color:#666;font-size:13px;">Sélectionnez un contact ou saisissez un/plusieurs numéro(s) ci-dessous (séparés par virgule, espace ou saut de ligne). Le montant sera divisé équitablement entre chaque numéro.</p>
         <select name="client_dest_id">
-            <option value="">-- Choisir --</option>
+            <option value="">-- Choisir un contact --</option>
             <?php foreach ($clients as $c): ?>
                 <?php if ($c['id'] !== $client['id']): ?>
                     <option value="<?= $c['id'] ?>"><?= esc($c['nom']) ?> (<?= esc($c['telephone']) ?>)</option>
                 <?php endif; ?>
             <?php endforeach; ?>
         </select>
+        <textarea name="numeros" rows="3" placeholder="Ex: 0331234567, 0377654321" style="margin-top:8px;width:100%;"></textarea>
     </div>
     <div class="form-group">
         <label>Montant (Ar)</label>

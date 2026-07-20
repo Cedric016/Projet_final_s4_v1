@@ -177,34 +177,7 @@ class Client extends BaseController
                 . number_format($recu, 0, ',', ' ') . ' Ar. Frais : ' . number_format($frais, 0, ',', ' ') . ' Ar.';
 
         } elseif ($type['code'] === 'transfert') {
-            if (!$destId) {
-                return redirect()->back()->with('error', 'Un destinataire est requis pour un transfert.');
-            }
-            $dest = $this->clientModel->find($destId);
-            if (!$dest) {
-                return redirect()->back()->with('error', 'Destinataire introuvable.');
-            }
-            if ($destId === $client['id']) {
-                return redirect()->back()->with('error', 'Le destinataire doit être différent de votre numéro.');
-            }
-
-            // Transfert vers un autre opérateur ? (préfixe du destinataire marqué autre_operateur)
-            $commissionAutre = 0.0;
-            $prefixeDestId   = null;
-            $prefixeDest     = $this->prefixeModel->prefixePourNumero($dest['telephone']);
-            if ($prefixeDest && (int) $prefixeDest['autre_operateur'] === 1) {
-                $prefixeDestId   = $prefixeDest['id'];
-                $taux            = (float) (new \App\Models\ConfigOperateurModel())->commissionAutreOperateur();
-                $commissionAutre = round($montant * $taux / 100, 2);
-            }
-
-            $fraisTotal = $frais + $commissionAutre;
-            if ($client['solde'] < $montant + $fraisTotal) {
-                return redirect()->back()->with('error', 'Solde insuffisant pour le transfert (montant + frais + commission autre opérateur).');
-            }
-            $this->clientModel->update($client['id'], ['solde' => $client['solde'] - $montant - $fraisTotal]);
-            $this->clientModel->update($destId, ['solde' => $dest['solde'] + $montant]);
-            $gain = $frais + $commissionAutre;
+            return $this->executerTransfert($client, $type, $montant, $destId);
         }
 
         $inserted = $this->transModel->insert([
@@ -226,6 +199,122 @@ class Client extends BaseController
 
         $msg = $messageSucces ?: "{$libelle} effectué. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar.';
         return redirect()->to(site_url('client'))->with('success', $msg);
+    }
+
+    /**
+     * Transfert (simple ou multiple). Le montant total est divisé équitablement entre chaque numéro.
+     */
+    protected function executerTransfert(array $client, array $type, float $montantTotal, ?int $destId)
+    {
+        $numerosSaisis = trim((string) $this->request->getPost('numeros'));
+
+        $numeros = [];
+        if ($numerosSaisis !== '') {
+            $parts = preg_split('/[\s,;]+/', $numerosSaisis, -1, PREG_SPLIT_NO_EMPTY);
+            foreach ($parts as $n) {
+                $numeros[] = preg_replace('/\s+/', '', $n);
+            }
+        }
+
+        if ($destId) {
+            $destSelect = $this->clientModel->find($destId);
+            if ($destSelect) {
+                $numeros[] = $destSelect['telephone'];
+            }
+        }
+
+        $numeros = array_values(array_unique($numeros));
+
+        if (empty($numeros)) {
+            return redirect()->back()->with('error', 'Veuillez indiquer au moins un destinataire (contact ou numéro).');
+        }
+
+        $destinataires = [];
+        foreach ($numeros as $num) {
+            if ($num === $client['telephone']) {
+                return redirect()->back()->with('error', 'Vous ne pouvez pas vous transférer à vous-même.');
+            }
+            if (!$this->prefixeModel->valideNumeroComplet($num)) {
+                return redirect()->back()->with('error', "Numéro invalide : {$num}. Format attendu : 10 chiffres, préfixe valide.");
+            }
+            $destinataires[] = $num;
+        }
+
+        $nb = count($destinataires);
+        $base     = floor(($montantTotal / $nb) * 100) / 100;
+        $reliquat = round($montantTotal - ($base * $nb), 2);
+        $montants = [];
+        foreach ($destinataires as $i => $num) {
+            $montants[$num] = $base + ($i === 0 ? $reliquat : 0.0);
+        }
+
+        $configModel = new \App\Models\ConfigOperateurModel();
+        $totalDebit = 0.0;
+        foreach ($destinataires as $num) {
+            $m       = $montants[$num];
+            $frais   = $this->baremeModel->calculerFrais($type['id'], $m);
+            $prefixe = $this->prefixeModel->prefixePourNumero($num);
+            $comm    = 0.0;
+            if ($prefixe && (int) $prefixe['autre_operateur'] === 1) {
+                $taux = (float) $configModel->commissionAutreOperateur();
+                $comm = round($m * $taux / 100, 2);
+            }
+            $totalDebit += $m + $frais + $comm;
+        }
+
+        if ($client['solde'] < $totalDebit) {
+            return redirect()->back()->with('error', 'Solde insuffisant pour le transfert vers ' . $nb . ' numéro(s) (montants + frais + commissions).');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        foreach ($destinataires as $num) {
+            $m    = $montants[$num];
+            $dest = $this->clientModel->findByTelephone($num);
+            if (!$dest) {
+                $id   = $this->clientModel->insert(['nom' => 'Client ' . $num, 'telephone' => $num, 'solde' => 0], true);
+                $dest = $this->clientModel->find($id);
+            }
+
+            $frais = $this->baremeModel->calculerFrais($type['id'], $m);
+            $commissionAutre = 0.0;
+            $prefixeDestId   = null;
+            $prefixe = $this->prefixeModel->prefixePourNumero($num);
+            if ($prefixe && (int) $prefixe['autre_operateur'] === 1) {
+                $prefixeDestId   = $prefixe['id'];
+                $taux            = (float) $configModel->commissionAutreOperateur();
+                $commissionAutre = round($m * $taux / 100, 2);
+            }
+
+            $fraisTotal = $frais + $commissionAutre;
+            $this->clientModel->update($client['id'], ['solde' => $this->clientModel->find($client['id'])['solde'] - $m - $fraisTotal]);
+            $this->clientModel->update($dest['id'], ['solde' => $dest['solde'] + $m]);
+
+            $this->transModel->insert([
+                'reference'         => $this->transModel->genererReference(),
+                'type_operation_id' => $type['id'],
+                'client_id'         => $client['id'],
+                'client_dest_id'    => $dest['id'],
+                'prefixe_dest_id'   => $prefixeDestId,
+                'montant'           => $m,
+                'frais'             => $frais,
+                'commission_autre'  => $commissionAutre,
+                'gain_operateur'    => $frais + $commissionAutre,
+                'statut'            => 'succes',
+            ]);
+        }
+
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            return redirect()->back()->with('error', 'Erreur lors du transfert multiple.');
+        }
+
+        $totalFrais = $totalDebit - $montantTotal;
+        return redirect()->to(site_url('client'))->with('success',
+            "Transfert multiple effectué vers {$nb} numéro(s). Montant par numéro : " . number_format($base, 0, ',', ' ') .
+            ' Ar. Frais + commissions : ' . number_format($totalFrais, 0, ',', ' ') . ' Ar.');
     }
 
     public function historique()
