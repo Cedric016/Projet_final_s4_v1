@@ -16,7 +16,7 @@
     </div>
     <div class="form-group" id="dest_block" style="display:none;">
         <label>Destinataire (pour transfert)</label>
-        <p style="margin:0 0 6px;color:#666;font-size:13px;">Sélectionnez un contact ou saisissez un/plusieurs numéro(s) ci-dessous (séparés par virgule, espace ou saut de ligne). Le montant sera divisé équitablement entre chaque numéro.</p>
+        <p style="margin:0 0 6px;color:#666;font-size:13px;">Sélectionnez un contact ou saisissez un/plusieurs numéro(s) ci-dessous (séparés par virgule, espace ou saut de ligne). Le montant sera divisé équitablement entre chaque numéro (même opérateur uniquement).</p>
         <select name="client_dest_id">
             <option value="">-- Choisir un contact --</option>
             <?php foreach ($clients as $c): ?>
@@ -33,8 +33,14 @@
     </div>
     <div class="form-group" id="retrait_block" style="display:none;">
         <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
-            <input type="checkbox" name="frais_inclus" id="frais_inclus" value="1" style="width:auto;">
+            <input type="checkbox" name="frais_inclus_retrait" id="frais_inclus" value="1" style="width:auto;">
             Inclure les frais de retrait dans le montant (vous recevez le montant saisi)
+        </label>
+    </div>
+    <div class="form-group" id="transfert_block" style="display:none;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:normal;">
+            <input type="checkbox" name="frais_inclus_transfert" id="frais_inclus_transfert" value="1" style="width:auto;">
+            Inclure les frais de retrait du destinataire (uniquement pour même opérateur)
         </label>
     </div>
     <button type="submit" class="btn">Valider</button>
@@ -45,6 +51,7 @@ document.getElementById('type_op').addEventListener('change', function () {
     var code = this.options[this.selectedIndex].getAttribute('data-code');
     document.getElementById('dest_block').style.display = (code === 'transfert') ? 'block' : 'none';
     document.getElementById('retrait_block').style.display = (code === 'retrait') ? 'block' : 'none';
+    document.getElementById('transfert_block').style.display = (code === 'transfert') ? 'block' : 'none';
 });
 </script>
 <?= $this->endSection() ?>

@@ -156,62 +156,94 @@ class Client extends BaseController
             return redirect()->back()->with('error', 'Type d\'opération invalide.');
         }
 
-        $frais = $this->baremeModel->calculerFrais($typeId, $montant);
-        $commission = round($montant * 1 / 100, 2);
-
-        $gain             = 0.0;
-        $operateurEnvId   = null;
-        $operateurRecId   = null;
-        $libelle = $type['libelle'];
-        $messageSucces = '';
-
         if ($type['code'] === 'depot') {
-            $this->clientModel->update($client['id'], ['solde' => $client['solde'] + $montant]);
+            return $this->executerDepot($client, $montant);
+        }
 
-        } elseif ($type['code'] === 'retrait') {
-            $fraisInclus = (bool) $this->request->getPost('frais_inclus');
-            if ($client['solde'] < $montant + $frais) {
-                return redirect()->back()->with('error', 'Solde insuffisant pour le retrait (montant + frais).');
-            }
-            $this->clientModel->update($client['id'], ['solde' => $client['solde'] - $montant - $frais]);
-            $gain = $frais;
-            $recu = $fraisInclus ? $montant : max(0, $montant - $frais);
-            $messageSucces = ($fraisInclus ? 'Retrait effectué (frais inclus). Net reçu : ' : 'Retrait effectué. Net reçu : ')
-                . number_format($recu, 0, ',', ' ') . ' Ar. Frais : ' . number_format($frais, 0, ',', ' ') . ' Ar.';
+        if ($type['code'] === 'retrait') {
+            return $this->executerRetrait($client, $type, $montant);
+        }
 
-        } elseif ($type['code'] === 'transfert') {
+        if ($type['code'] === 'transfert') {
             return $this->executerTransfert($client, $type, $montant, $destId);
         }
 
-        $inserted = $this->transModel->insert([
-            'reference'             => $this->transModel->genererReference(),
-            'type_operation_id'     => $typeId,
-            'client_id'             => $client['id'],
-            'client_dest_id'        => $destId,
-            'prefixe_dest_id'       => $operateurRecId ?? null,
-            'operateur_envoyeur_id' => $operateurEnvId ?? null,
-            'operateur_recepteur_id'=> $operateurRecId ?? null,
-            'montant'               => $montant,
-            'frais'                 => $frais,
-            'commission_autre'      => $commission,
-            'gain_operateur'        => $gain,
-            'statut'                => 'succes',
+        return redirect()->back()->with('error', 'Type d\'opération non supporté.');
+    }
+
+    protected function executerDepot(array $client, float $montant)
+    {
+        $this->clientModel->update($client['id'], ['solde' => $client['solde'] + $montant]);
+
+        $this->transModel->insert([
+            'reference'         => $this->transModel->genererReference(),
+            'type_operation_id' => 1,
+            'client_id'         => $client['id'],
+            'client_dest_id'    => null,
+            'montant'           => $montant,
+            'frais'             => 0,
+            'commission_autre'  => 0,
+            'frais_retrait_dest'=> 0,
+            'gain_operateur'    => 0,
+            'statut'            => 'succes',
         ]);
 
-        if (!$inserted) {
-            return redirect()->back()->with('error', 'Erreur lors de l\'enregistrement : ' . implode('<br>', $this->transModel->errors()));
+        return redirect()->to(site_url('client'))->with('success', "Dépôt de " . number_format($montant, 0, ',', ' ') . ' Ar effectué.');
+    }
+
+    protected function executerRetrait(array $client, array $type, float $montant)
+    {
+        $fraisInclus = (bool) $this->request->getPost('frais_inclus_retrait');
+        $frais = $this->baremeModel->calculerFrais((int) $type['id'], $montant);
+
+        if ($fraisInclus) {
+            $totalDebit = $montant + $frais;
+            $netRecu    = $montant;
+            if ($client['solde'] < $totalDebit) {
+                return redirect()->back()->with('error', 'Solde insuffisant pour le retrait (montant + frais).');
+            }
+            $this->clientModel->update($client['id'], ['solde' => $client['solde'] - $totalDebit]);
+        } else {
+            $totalDebit = $montant;
+            $netRecu    = max(0.0, $montant - $frais);
+            if ($frais > 0 && $montant <= $frais) {
+                return redirect()->back()->with('error', 'Le montant doit être supérieur aux frais de retrait.');
+            }
+            if ($client['solde'] < $totalDebit) {
+                return redirect()->back()->with('error', 'Solde insuffisant pour le retrait.');
+            }
+            $this->clientModel->update($client['id'], ['solde' => $client['solde'] - $totalDebit]);
         }
 
-        $msg = $messageSucces ?: "{$libelle} effectué. Frais: " . number_format($frais, 0, ',', ' ') . ' Ar.';
+        $gain = $frais;
+
+        $this->transModel->insert([
+            'reference'         => $this->transModel->genererReference(),
+            'type_operation_id' => $type['id'],
+            'client_id'         => $client['id'],
+            'client_dest_id'    => null,
+            'montant'           => $montant,
+            'frais'             => $frais,
+            'commission_autre'  => 0,
+            'frais_retrait_dest'=> 0,
+            'gain_operateur'    => $gain,
+            'statut'            => 'succes',
+        ]);
+
+        $msg = ($fraisInclus ? 'Retrait effectué (frais inclus). Net reçu : ' : 'Retrait effectué. Net reçu : ')
+            . number_format($netRecu, 0, ',', ' ') . ' Ar. Frais : ' . number_format($frais, 0, ',', ' ') . ' Ar.';
+
         return redirect()->to(site_url('client'))->with('success', $msg);
     }
 
     /**
      * Transfert (simple ou multiple). Le montant total est divisé équitablement entre chaque numéro.
+     * Multi-envoi : même opérateur uniquement.
      */
     protected function executerTransfert(array $client, array $type, float $montantTotal, ?int $destId)
     {
         $numerosSaisis = trim((string) $this->request->getPost('numeros'));
+        $fraisInclus   = (bool) $this->request->getPost('frais_inclus_transfert');
 
         $numeros = [];
         if ($numerosSaisis !== '') {
@@ -246,6 +278,21 @@ class Client extends BaseController
         }
 
         $nb = count($destinataires);
+
+        if ($nb > 1) {
+            $prefixeEnv = $this->prefixeModel->prefixePourNumero($client['telephone']);
+            $estAutreEnv = $prefixeEnv ? (bool) $prefixeEnv['autre_operateur'] : false;
+
+            foreach ($destinataires as $num) {
+                $prefixeRec = $this->prefixeModel->prefixePourNumero($num);
+                $estAutreRec = $prefixeRec ? (bool) $prefixeRec['autre_operateur'] : false;
+
+                if ($estAutreEnv !== $estAutreRec) {
+                    return redirect()->back()->with('error', 'L\'envoi multiple n\'est autorisé que vers le même opérateur.');
+                }
+            }
+        }
+
         $base     = floor(($montantTotal / $nb) * 100) / 100;
         $reliquat = round($montantTotal - ($base * $nb), 2);
         $montants = [];
@@ -253,12 +300,23 @@ class Client extends BaseController
             $montants[$num] = $base + ($i === 0 ? $reliquat : 0.0);
         }
 
+        $idRetrait = $this->baremeModel->getIdTypeRetrait();
+
         $totalDebit = 0.0;
         foreach ($destinataires as $num) {
-            $m       = $montants[$num];
-            $frais   = $this->baremeModel->calculerFrais($type['id'], $m);
-            $commission = round($m * 1 / 100, 2);
-            $totalDebit += $m + $frais + $commission;
+            $m              = $montants[$num];
+            $frais          = $this->baremeModel->calculerFrais((int) $type['id'], $m);
+            $commission     = round($m * 1 / 100, 2);
+            $fraisRetraitDest = 0.0;
+
+            if ($fraisInclus && $idRetrait !== null) {
+                $prefixeRec = $this->prefixeModel->prefixePourNumero($num);
+                if ($prefixeRec && (int) $prefixeRec['autre_operateur'] === 0) {
+                    $fraisRetraitDest = $this->baremeModel->calculerFrais($idRetrait, $m);
+                }
+            }
+
+            $totalDebit += $m + $frais + $commission + $fraisRetraitDest;
         }
 
         if ($client['solde'] < $totalDebit) {
@@ -269,21 +327,30 @@ class Client extends BaseController
         $db->transStart();
 
         foreach ($destinataires as $num) {
-            $m    = $montants[$num];
+            $m              = $montants[$num];
+            $frais          = $this->baremeModel->calculerFrais((int) $type['id'], $m);
+            $commission     = round($m * 1 / 100, 2);
+            $fraisRetraitDest = 0.0;
+
+            if ($fraisInclus && $idRetrait !== null) {
+                $prefixeRec = $this->prefixeModel->prefixePourNumero($num);
+                if ($prefixeRec && (int) $prefixeRec['autre_operateur'] === 0) {
+                    $fraisRetraitDest = $this->baremeModel->calculerFrais($idRetrait, $m);
+                }
+            }
+
             $dest = $this->clientModel->findByTelephone($num);
             if (!$dest) {
                 $id   = $this->clientModel->insert(['nom' => 'Client ' . $num, 'telephone' => $num, 'solde' => 0], true);
                 $dest = $this->clientModel->find($id);
             }
 
-            $frais = $this->baremeModel->calculerFrais($type['id'], $m);
-            $commission = round($m * 1 / 100, 2);
             $prefixeEnv = $this->prefixeModel->prefixePourNumero($client['telephone']);
             $prefixeRec = $this->prefixeModel->prefixePourNumero($num);
-            $operateurEnvId   = $prefixeEnv['id'] ?? null;
-            $operateurRecId   = $prefixeRec['id'] ?? null;
+            $operateurEnvId = $prefixeEnv['id'] ?? null;
+            $operateurRecId = $prefixeRec['id'] ?? null;
 
-            $this->clientModel->update($client['id'], ['solde' => $this->clientModel->find($client['id'])['solde'] - $m - $frais - $commission]);
+            $this->clientModel->update($client['id'], ['solde' => $this->clientModel->find($client['id'])['solde'] - $m - $frais - $commission - $fraisRetraitDest]);
             $this->clientModel->update($dest['id'], ['solde' => $dest['solde'] + $m]);
 
             $this->transModel->insert([
@@ -297,7 +364,8 @@ class Client extends BaseController
                 'montant'               => $m,
                 'frais'                 => $frais,
                 'commission_autre'      => $commission,
-                'gain_operateur'        => $frais + $commission,
+                'frais_retrait_dest'    => $fraisRetraitDest,
+                'gain_operateur'        => $frais + $commission + $fraisRetraitDest,
                 'statut'                => 'succes',
             ]);
         }
@@ -311,7 +379,7 @@ class Client extends BaseController
         $totalFrais = $totalDebit - $montantTotal;
         return redirect()->to(site_url('client'))->with('success',
             "Transfert multiple effectué vers {$nb} numéro(s). Montant par numéro : " . number_format($base, 0, ',', ' ') .
-            ' Ar. Frais + commissions : ' . number_format($totalFrais, 0, ',', ' ') . ' Ar.');
+            ' Ar. Total frais/commissions : ' . number_format($totalFrais, 0, ',', ' ') . ' Ar.');
     }
 
     public function historique()

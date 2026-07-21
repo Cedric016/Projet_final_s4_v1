@@ -12,7 +12,8 @@ class TransactionModel extends Model
     protected $allowedFields    = [
         'reference', 'type_operation_id', 'client_id', 'client_dest_id',
         'prefixe_dest_id', 'operateur_envoyeur_id', 'operateur_recepteur_id',
-        'montant', 'frais', 'commission_autre', 'gain_operateur', 'statut',
+        'montant', 'frais', 'commission_autre', 'frais_retrait_dest',
+        'gain_operateur', 'statut',
     ];
     protected $useSoftDeletes   = false;
 

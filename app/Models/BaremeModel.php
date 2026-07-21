@@ -42,4 +42,10 @@ class BaremeModel extends Model
 
         return (float) $row['frais'];
     }
+
+    public function getIdTypeRetrait(): ?int
+    {
+        $type = model(TypeOperationModel::class)->where('code', 'retrait')->first();
+        return $type ? (int) $type['id'] : null;
+    }
 }
