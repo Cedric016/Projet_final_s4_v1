@@ -1,7 +1,7 @@
 <?= $this->extend('layout') ?>
 
 <?= $this->section('content') ?>
-<h2>Montants à envoyer à chaque opérateur</h2>
+<h2><i class="fas fa-hand-holding-usd"></i> Montants à envoyer à chaque opérateur</h2>
 <p>Commission 1 % du montant transféré, par opérateur du récepteur.</p>
 
 <div class="card">

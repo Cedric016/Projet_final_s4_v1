@@ -1,11 +1,11 @@
 <?= $this->extend('layout') ?>
 
 <?= $this->section('content') ?>
-<h2>Situation des gains par opérateur</h2>
+<h2><i class="fas fa-chart-line"></i> Situation des gains par opérateur</h2>
 <p>Répartition des frais et commission 1 % par opérateur de l'expéditeur.</p>
 
 <div class="card">
-    <h3>Gains par opérateur (transferts)</h3>
+    <h3><i class="fas fa-chart-bar"></i> Gains par opérateur (transferts)</h3>
     <?php if (empty($gains)): ?>
         <p>Aucun transfert générateur de gain pour l'instant.</p>
     <?php else: ?>

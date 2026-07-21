@@ -1,8 +1,8 @@
 <?= $this->extend('layout') ?>
 
 <?= $this->section('content') ?>
-<div style="display:flex;justify-content:space-between;align-items:center;">
-    <h2>Historique des opérations</h2>
+<div class="header-actions">
+    <h2><i class="fas fa-history"></i> Historique des opérations</h2>
     <a href="<?= site_url('operations') ?>" class="btn">+ Nouvelle opération</a>
 </div>
 

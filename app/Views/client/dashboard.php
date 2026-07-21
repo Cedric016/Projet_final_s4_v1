@@ -2,18 +2,18 @@
 
 <?= $this->section('content') ?>
 <div class="card">
-    <h2>Bonjour <?= esc($client['nom']) ?></h2>
-    <p style="color:#666;">Téléphone : <?= esc($client['telephone']) ?></p>
-    <p style="margin-top:15px;">Votre solde</p>
+    <h2><i class="fas fa-home"></i> Bonjour <?= esc($client['nom']) ?></h2>
+    <p>Téléphone : <?= esc($client['telephone']) ?></p>
+    <p class="mt-4">Votre solde</p>
     <div class="solde-box"><?= number_format($client['solde'], 0, ',', ' ') ?> Ar</div>
-    <p style="margin-top:15px;">
+    <p class="mt-4">
         <a href="<?= site_url('client/operations') ?>" class="btn">Faire une opération</a>
         <a href="<?= site_url('client/historique') ?>" class="btn btn-secondary">Voir l'historique</a>
     </p>
 </div>
 
 <div class="card">
-    <h3>Dernières opérations</h3>
+    <h3><i class="fas fa-clock"></i> Dernières opérations</h3>
     <?php if (empty($historique)): ?>
         <p>Aucune opération pour le moment.</p>
     <?php else: ?>

@@ -1,7 +1,7 @@
 <?= $this->extend('client/layout') ?>
 
 <?= $this->section('content') ?>
-<h2>Mon historique</h2>
+<h2><i class="fas fa-history"></i> Mon historique</h2>
 
 <table>
     <thead><tr><th>Référence</th><th>Type</th><th>Destinataire</th><th>Montant</th><th>Frais</th><th>Commission 1%</th><th>Frais retrait dest.</th><th>Date</th></tr></thead>

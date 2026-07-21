@@ -1,7 +1,7 @@
 <?= $this->extend('layout') ?>
 
 <?= $this->section('content') ?>
-<h2>Tableau de bord de l'opérateur</h2>
+<h2><i class="fas fa-chart-pie"></i> Tableau de bord</h2>
 
 <div class="stats">
     <div class="stat"><div class="num"><?= number_format($totalGain, 0, ',', ' ') ?> Ar</div><div class="label">Gain total opérateur (frais + commission 1%)</div></div>
@@ -12,7 +12,7 @@
 </div>
 
 <div class="card">
-    <h3>Gain par type d'opération</h3>
+    <h3><i class="fas fa-chart-line"></i> Gain par type d'opération</h3>
     <?php if (empty($gainsParType)): ?>
         <p>Aucune opération génératrice de gain pour l'instant.</p>
     <?php else: ?>
@@ -28,7 +28,7 @@
 </div>
 
 <div class="card">
-    <h3>Dernières transactions</h3>
+    <h3><i class="fas fa-list"></i> Dernières transactions</h3>
     <?php if (empty($dernieres)): ?>
         <p>Aucune transaction enregistrée.</p>
     <?php else: ?>

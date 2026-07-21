@@ -1,9 +1,9 @@
 <?= $this->extend('layout') ?>
 
 <?= $this->section('content') ?>
-<h2><?= $bareme ? 'Modifier le barème' : 'Nouveau barème de frais' ?></h2>
+<h2><i class="fas fa-calculator"></i> <?= $bareme ? 'Modifier le barème' : 'Nouveau barème de frais' ?></h2>
 
-<form method="post" action="<?= $bareme ? site_url('baremes/update/' . $bareme['id']) : site_url('baremes/store') ?>" style="max-width:500px;">
+<form method="post" action="<?= $bareme ? site_url('baremes/update/' . $bareme['id']) : site_url('baremes/store') ?>" class="form-card">
     <div class="form-group">
         <label>Type d'opération</label>
         <select name="type_operation_id" required>
@@ -25,7 +25,7 @@
         <label>Frais (Ar)</label>
         <input type="number" name="frais" min="0" value="<?= esc($bareme['frais'] ?? '') ?>" required>
     </div>
-    <button type="submit" class="btn">Enregistrer</button>
+    <button type="submit" class="btn"><i class="fas fa-save"></i> Enregistrer</button>
     <a href="<?= site_url('baremes') ?>" class="btn btn-warning">Annuler</a>
 </form>
 <?= $this->endSection() ?>
